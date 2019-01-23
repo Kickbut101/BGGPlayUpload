@@ -1,8 +1,8 @@
 # Program that will allow a user to upload gameplays that were exported from BGG website (into xml file)
 # You will enter in your username and password and the script will login to the website as you and start uploading files with POSTs
-# Version 2.0
+# Version 2.1
 # Andrew Lund
-# Last update: 1-20-19
+# Last update: 1-23-19
 
 
 
@@ -82,7 +82,7 @@ function storeOnlinePlaysAsXML
 
 {
 param ($pointedUsername)
-clear-variable xmlofplays -ErrorAction SilentlyContinue
+clear-variable xmlofplays,D,i,numberOfTotalPlays -ErrorAction SilentlyContinue
 [xml]$D = (Invoke-WebRequest https://boardgamegeek.com/xmlapi2/plays?username=$pointedUsername`&page=1)
 $numberOfTotalPlays = $D.plays.total
 if ($numberOfTotalPlays -gt 100)
@@ -114,8 +114,10 @@ Else
         $xmlOfPlays += $D.plays.play
 
     }
-
-Write-Host "If you saw an error pop up or you think it's not showing all your plays run this option again"
+if ([Int]($D.plays.total) -ne [Int]$xmlOfPlays.id.count)
+{
+Write-Host "Found",$xmlOfPlays.id.count,"of plays, where I was expecting",$D.plays.total,"Run this option again"
+}
 Return($xmlOfPlays)
 }
 
@@ -319,7 +321,7 @@ do
 
                 $name = ($xmlOfPlays.players.player.name |Sort-Object | Select-Object -Unique | Out-GridView -passthru)
                 $xmlOfPlays = $xmlOfPlays.where({ $_.players.player.name -like $name})
-                $numberOfFilteredPlays = $xmlOfPlays.count
+                $numberOfFilteredPlays = $xmlOfPlays.id.count
 
 
            } 
@@ -358,7 +360,7 @@ do
 
                 # Start loop to post each play
 
-                For ($arrayNumber=0;$arrayNumber -lt (@($xmlOfPlays).count);$arrayNumber++)
+                For ($arrayNumber=0;$arrayNumber -lt (@($xmlOfPlays.id).count);$arrayNumber++)
 
                     {
                         $playersConverted = collectPlayers $xmlOfPlays $arrayNumber
